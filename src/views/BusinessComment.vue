@@ -17,17 +17,6 @@
           <p class="business-address">商家地址：{{ business.businessAddress || '沈阳市浑南区软件园E18栋' }}</p>
         </div>
       </div>
-      <div class="business-actions">
-        <button class="action-btn">商家商品 ▼</button>
-      </div>
-    </div>
-
-    <!-- 商品信息卡片 -->
-    <div class="product-card" v-if="selectedProduct">
-      <img class="product-image" :src="selectedProduct.image" alt="商品图片" />
-      <div class="product-info">
-        <h4>{{ selectedProduct.name }}</h4>
-      </div>
     </div>
 
     <!-- 评论筛选标签 -->
@@ -48,7 +37,7 @@
       <div v-for="comment in filteredComments" :key="comment.id" class="comment-item">
         <!-- 用户信息区域 -->
         <div class="user-info">
-          <img class="avatar" :src="comment.userAvatar" alt="用户头像" />
+          <img class="avatar" :src="account.accountImg" alt="用户头像" />
           <div class="user-details">
             <p class="username">{{ comment.username }}</p>
             <p class="comment-date">{{ comment.date }}</p>
@@ -58,17 +47,12 @@
         <!-- 评分区域 -->
         <div class="rating">
           <span v-for="n in 5" :key="n" class="star" :class="{ active: n <= comment.rating }">★</span>
-          <span class="rating-text">{{ comment.rating }}.0</span>
+          <span class="rating-text">{{ comment.rating }}</span>
         </div>
         
         <!-- 评论内容 -->
         <div class="comment-content">
           <p>{{ comment.content }}</p>
-        </div>
-        
-        <!-- 评论图片 -->
-        <div class="comment-images" v-if="comment.images && comment.images.length > 0">
-          <img v-for="(image, index) in comment.images" :key="index" :src="image" alt="评论图片" class="comment-image" />
         </div>
       </div>
       
@@ -85,10 +69,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { get } from '@/api/index.js';
 import { ElMessage } from 'element-plus';
+import {getSessionStorage} from "@/common.js"
 
 const router = useRouter();
 const route = useRoute();
 const businessId = route.query.businessId;
+//用户登录信息
+const account = getSessionStorage("account");
 
 // 商家信息
 const business = ref({
@@ -97,11 +84,7 @@ const business = ref({
   businessAddress: ''
 });
 
-// 选中的商品信息
-const selectedProduct = ref({
-  name: '招牌香酥鸡饼·麻酱千拌',
-  image: '/src/assets/businessImg/1.jpg'
-});
+
 
 // 筛选选项
 const filterOptions = ref([
@@ -132,23 +115,34 @@ const setActiveFilter = async (filterKey) => {
 const loadCommentsByFilter = async (filterKey) => {
   try {
     const res = await get(`/comment/business/${businessId}/filter?ratingFilter=${filterKey}`);
+    console.log('筛选API返回数据:', res.data);
     if (res.data.code === 20000) {
-      // 将后端返回的数据格式转换为前端需要的格式
-      commentList.value = res.data.resultdata.map(comment => ({
-        id: comment.commentId || comment.id,
-        userAvatar: '/src/assets/businessImg/1.jpg', // 默认头像
-        username: comment.accountName || comment.userName || '匿名用户',
-        date: comment.created ? new Date(comment.created).toLocaleDateString() : '',
-        rating: comment.rate || comment.rating || 5,
-        content: comment.commentText || comment.content || '',
-        images: comment.images || [] // 如果有图片字段需要处理
-      }));
-      console.log('加载的评论数据:', commentList.value);
+      // 检查resultdata是否存在且为数组
+      if (res.data.resultdata && Array.isArray(res.data.resultdata)) {
+        // 将后端返回的数据格式转换为前端需要的格式
+        commentList.value = res.data.resultdata.map(comment => ({
+          id: comment.coId || comment.id,
+          userAvatar: '/src/assets/businessImg/1.jpg', // 默认头像
+          username: comment.accountId || '匿名用户',
+          date: comment.created ? new Date(comment.created).toLocaleDateString() : '',
+          rating: comment.rate || 5,
+          content: comment.coText || '',
+          images: comment.coImg ? [comment.coImg] : []
+        }));
+        console.log('加载的评论数据:', commentList.value);
+      } else {
+        // 如果resultdata不是数组，设置为空数组
+        commentList.value = [];
+        console.log('后端返回的resultdata不是数组:', res.data.resultdata);
+        ElMessage.warning('暂无评论数据');
+      }
     } else {
-      ElMessage.warning('暂无评论数据');
+      commentList.value = [];
+      ElMessage.warning(res.data.message || '暂无评论数据');
     }
   } catch (error) {
     console.error('加载筛选评论失败:', error);
+    commentList.value = [];
     ElMessage.error('加载筛选评论失败');
   }
 };
@@ -174,23 +168,34 @@ const loadBusinessInfo = async () => {
 const loadComments = async () => {
   try {
     const res = await get(`/comment/business/${businessId}`);
+    console.log('评论API返回数据:', res.data);
     if (res.data.code === 20000) {
-      // 将后端返回的数据格式转换为前端需要的格式
-       commentList.value = res.data.resultdata.map(comment => ({
-         id: comment.coId,
-         userAvatar: '/src/assets/businessImg/1.jpg', // 默认头像
-         username: comment.accountId || '匿名用户',
-         date: comment.created ? new Date(comment.created).toLocaleDateString() : '',
-         rating: comment.rate  || 5,
-         content: comment.coText || '',
-         images: comment.images || [] // 如果有图片字段需要处理
-       }));
-       console.log('筛选的评论数据:', commentList.value);
+      // 检查resultdata是否存在且为数组
+      if (res.data.resultdata && Array.isArray(res.data.resultdata)) {
+        // 将后端返回的数据格式转换为前端需要的格式
+        commentList.value = res.data.resultdata.map(comment => ({
+          id: comment.coId || comment.id,
+          userAvatar: '/src/assets/businessImg/1.jpg', // 默认头像
+          username: comment.accountId || '匿名用户',
+          date: comment.created ? new Date(comment.created).toLocaleDateString() : '',
+          rating: comment.rate || 5,
+          content: comment.coText || '',
+          images: comment.coImg ? [comment.coImg] : []
+        }));
+        console.log('加载的评论数据:', commentList.value);
+      } else {
+        // 如果resultdata不是数组，设置为空数组
+        commentList.value = [];
+        console.log('后端返回的resultdata不是数组:', res.data.resultdata);
+        ElMessage.warning('暂无评论数据');
+      }
     } else {
-      ElMessage.warning('暂无评论数据');
+      commentList.value = [];
+      ElMessage.warning(res.data.message || '暂无评论数据');
     }
   } catch (error) {
     console.error('加载评论失败:', error);
+    commentList.value = [];
     ElMessage.error('加载评论失败');
   }
 };
@@ -278,46 +283,7 @@ onMounted(() => {
   margin: 0;
 }
 
-.business-actions {
-  display: flex;
-  justify-content: flex-end;
-}
 
-.action-btn {
-  background: #ffb900;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-/* 商品信息卡片 */
-.product-card {
-  background: white;
-  margin: 0 10px 10px 10px;
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-}
-
-.product-image {
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
-  margin-right: 12px;
-  object-fit: cover;
-}
-
-.product-info h4 {
-  font-size: 14px;
-  font-weight: bold;
-  margin: 0;
-  color: #333;
-}
 
 /* 评论筛选标签 */
 .comment-filter {
@@ -426,19 +392,7 @@ onMounted(() => {
   margin: 0;
 }
 
-/* 评论图片 */
-.comment-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
 
-.comment-image {
-  width: 80px;
-  height: 80px;
-  border-radius: 4px;
-  object-fit: cover;
-}
 
 /* 空状态 */
 .empty-state {

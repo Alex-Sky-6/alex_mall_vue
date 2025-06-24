@@ -18,6 +18,7 @@ import OrderList from '@/views/OrderList.vue'
 import AddressList from '@/views/AddressList.vue'
 import MyComment from '@/views/MyComment.vue'
 import BusinessComment from '@/views/BusinessComment.vue'
+import OnlineComment from '@/views/onlineComment.vue'
 
 
 
@@ -132,6 +133,11 @@ const routes = [
     path: '/businessComment',
     name: 'businessComment',
     component: BusinessComment
+  },
+  {
+    path: '/onlineComment',
+    name: 'onlineComment',
+    component: OnlineComment
   },
 
 ]

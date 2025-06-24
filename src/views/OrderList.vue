@@ -39,7 +39,7 @@
                     </div>
                     <div class="action">
                         <button v-if="order.statu == 0" @click="toPayment(order.orderId)" class="btn-pay">前往支付 &gt;</button>
-                        <button v-if="order.statu == 1" class="btn-comment">去评价 &gt;</button>
+                        <button v-if="order.statu == 1" @click="toOnline(order.orderId)"class="btn-comment">去评价 &gt;</button>
                     </div>
                 </div>
             </li>
@@ -155,20 +155,10 @@
 
     const toPayment = (orderId) => {
         router.push({ path: '/payment', query: { orderId: orderId } });
-        console.log('orderId:', orderId);
-        console.log('请求订单详情接口:', url);
-        get(url).then(res => {
-            console.log('接口返回:', res.data);
-            if (res.data.code === 20000) {
-                order.value = res.data.resultdata;
-                if (res.data.resultdata.orders) {
-                    orderDetailList.value = res.data.resultdata.orders;
-                    console.log('订单明细:', orderDetailList.value);
-                }
-            }
-        }).catch(e => console.error(e));
     };
-
+    const toOnline=(orderId)=>{
+        router.push({ path: '/onlinecomment', query: { orderId: orderId } });
+    }
 </script>
   
 <style scoped>

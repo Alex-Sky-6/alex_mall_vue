@@ -2,6 +2,9 @@
   <div class="wrapper">
     <!-- header部分 -->
     <header>
+      <div class="back-arrow" @click="toback()">
+        <el-icon><ArrowLeftBold /></el-icon>
+      </div>
       <p>购物车</p>
     </header>
 
@@ -88,7 +91,7 @@
     </div>
 
     <!-- Footer组件 -->
-    <Footer></Footer>
+    <!-- <Footer></Footer> -->
   </div>
 </template>
 
@@ -97,7 +100,7 @@ import { ref, computed, onMounted } from "vue"
 import { get, post } from "@/api"
 import { useRouter } from "vue-router"
 import { ElMessage } from 'element-plus'
-import { CirclePlusFilled, RemoveFilled, ShoppingCartFull } from '@element-plus/icons-vue'
+import { CirclePlusFilled, RemoveFilled, ShoppingCartFull, ArrowLeftBold } from '@element-plus/icons-vue'
 import { getSessionStorage } from "@/common"
 import Footer from '@/components/Footer.vue'
 
@@ -294,6 +297,11 @@ const loadCart = () => {
   })
 }
 
+// 回退方法
+const toback = () => {
+  router.back()
+}
+
 // 页面初始化
 const init = () => {
   loadCart()
@@ -328,6 +336,17 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+.wrapper header .back-arrow {
+  position: absolute;
+  left: 4vw;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 5vw;
+  color: #596164;
 }
 
 /****************** 购物车内容 ******************/
@@ -501,7 +520,7 @@ onMounted(() => {
   height: 14vw;
   position: fixed;
   left: 0;
-  bottom: 14vw;
+  bottom: 0;
   display: flex;
   z-index: 10000;
   background-color: #fff;

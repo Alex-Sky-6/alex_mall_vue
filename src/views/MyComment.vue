@@ -13,7 +13,7 @@
       <div v-for="comment in commentList" :key="comment.id" class="comment-item">
         <!-- 用户信息区域 -->
         <div class="user-info">
-          <img class="avatar" :src="comment.userAvatar" alt="用户头像" />
+          <img class="avatar" :src="account.accountImg" alt="用户头像" />
           <div class="user-details">
             <p class="username">{{ comment.username }}</p>
             <p class="comment-date">{{ comment.date }}</p>
@@ -23,7 +23,7 @@
         <!-- 评分区域 -->
         <div class="rating">
           <span v-for="n in 5" :key="n" class="star" :class="{ active: n <= comment.rating }">★</span>
-          <span class="rating-text">{{ comment.rating }}.0</span>
+          <span class="rating-text">{{ comment.rating }}</span>
         </div>
         
         <!-- 评论内容 -->
@@ -58,24 +58,14 @@ import Footer from '@/components/Footer.vue';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { get, post } from '@/api/index.js';
+import { get, post, del } from '@/api/index.js';
 import { getSessionStorage } from '@/common';
 
 const router = useRouter();
 const account = getSessionStorage('account');
 
 // 评论列表数据
-const commentList = ref([
-  {
-    id: 1,
-    userAvatar: '/src/assets/businessImg/1.jpg',
-    username: '小谷姐姐（软件园...',
-    date: '2024-06-21',
-    rating: 4,
-    content: '非常好吃，性价比超高！！！肉馅也很满，很棒，这家也很快，店家服务态度超好，下次继续！！！',
-    images: ['/src/assets/businessImg/1.jpg']
-  }
-]);
+const commentList = ref([]);
 
 // 回退方法
 const toback = () => {
@@ -83,7 +73,7 @@ const toback = () => {
 };
 
 // 删除评论
-const deleteComment = (commentId) => {
+const deleteComment = async (commentId) => {
   ElMessageBox.confirm(
     '确定要删除这条评论吗？',
     '提示',
@@ -92,15 +82,23 @@ const deleteComment = (commentId) => {
       cancelButtonText: '取消',
       type: 'warning',
     }
-  ).then(() => {
-    // 这里应该调用删除评论的API
-    // const res = await post(`/comment/delete/${commentId}`);
-    // if (res.data.code === 20000) {
-      commentList.value = commentList.value.filter(comment => comment.id !== commentId);
-      ElMessage.success('评论删除成功');
-    // } else {
-    //   ElMessage.error('删除失败');
-    // }
+  ).then(async () => {
+    try {
+      console.log('开始删除评论，评论ID:', commentId);
+      const res = await del(`/comment/delete/${commentId}`);
+      console.log('删除评论响应:', res);
+      
+      if (res.data.code === 20000) {
+        commentList.value = commentList.value.filter(comment => comment.id !== commentId);
+        ElMessage.success('评论删除成功');
+      } else {
+        console.error('删除评论失败，错误码:', res.data.code, '错误信息:', res.data.message);
+        ElMessage.error('删除失败: ' + (res.data.message || '未知错误'));
+      }
+    } catch (error) {
+      console.error('删除评论失败:', error);
+      ElMessage.error('删除失败，请稍后重试');
+    }
   }).catch(() => {
     ElMessage.info('已取消删除');
   });
@@ -109,13 +107,36 @@ const deleteComment = (commentId) => {
 // 加载评论数据
 const loadComments = async () => {
   try {
-    // 这里应该调用获取用户评论的API
-    // const res = await get(`/comment/user/${account.accountId}`);
-    // if (res.data.code === 20000) {
-    //   commentList.value = res.data.resultdata;
-    // }
+    console.log('开始加载用户评论，用户ID:', account.accountId);
+    const res = await get(`/comment/user/${account.accountId}`);
+    console.log('获取用户评论响应:', res);
+    
+    if (res.data.code === 20000) {
+      // 检查返回的数据是否为数组
+      if (Array.isArray(res.data.resultdata)) {
+        commentList.value = res.data.resultdata.map(comment => {
+          console.log('处理单个评论数据:', comment);
+          return {
+            id: comment.coId || comment.id,
+            username: account.accountName,
+            date: comment.created,
+            rating: comment.rate || 0,
+            content: comment.coText || '',
+            images: comment.coImg ? [comment.coImg] : []
+          };
+        });
+        console.log('评论数据加载成功:', commentList.value);
+      } else {
+        console.warn('返回的评论数据不是数组:', res.data.resultdata);
+        commentList.value = [];
+      }
+    } else {
+      console.error('获取评论失败，错误码:', res.data.code, '错误信息:', res.data.message);
+      ElMessage.error('获取评论失败: ' + (res.data.message || '未知错误'));
+    }
   } catch (error) {
     console.error('加载评论失败:', error);
+    ElMessage.error('加载评论失败，请稍后重试');
   }
 };
 
