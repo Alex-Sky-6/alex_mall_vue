@@ -14,8 +14,35 @@
       <div class="order-info">
         <p>订单信息：</p>
         <div class="order-info-row">
-            <h4>{{order.business.businessName}}</h4>
-            <p>&#165; {{order.orderTotal}}</p>
+            <div class="business-info">
+                <img v-if="order.business?.businessImg" :src="order.business?.businessImg" alt="商店图片" class="business-img">
+                <div class="business-details">
+                    <h4>{{order.business?.businessName || '加载中...'}}</h4>
+                    <br>
+                    <h5>配送费：&#165;{{order.business?.deliveryPrice || 0}}</h5>
+                    <p>&#165; {{order.orderTotal || 0}}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 商品详情部分 -->
+        <div class="goods-details-section" v-if="order.ordersdetailet && order.ordersdetailet.length > 0">
+          <p class="goods-title">商品详情：</p>
+          <ul class="goods-list">
+            <li v-for="(item, index) in order.ordersdetailet" :key="item.odId" class="goods-item">
+              <div class="goods-left">
+                <img v-if="item.goods?.goodsImg" :src="item.goods?.goodsImg" alt="商品图片" class="goods-img">
+                <div class="goods-info">
+                  <h4 class="goods-name">{{item.goods?.goodsName || '商品名称'}}</h4>
+                  <p class="goods-price">&#165; {{item.goods?.goodsPrice || 0}}</p>
+                </div>
+              </div>
+              <div class="goods-right">
+                <p class="goods-quantity">x {{item.quantity || 1}}</p>
+                <p class="goods-total">&#165; {{((item.goods?.goodsPrice || 0) * (item.quantity || 1)).toFixed(2)}}</p>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
   
@@ -69,23 +96,43 @@
   const orderId = route.query.orderId;
   const account = getSessionStorage('account');
   const order = ref({
-      business:{
-          businessName:'商家名称'
-      },
-      orderTotal:10000
+      businessName:'加载中...',
+      orderTotal:0,
+      businessImg: '' // 添加商店图片字段
   });
   const paymentType = ref(1);
 
   onMounted(() => {
-      // 此处应根据orderId从服务器获取订单信息
-      // let url = `/orders/getOrdersById/${orderId}`;
-      // get(url).then(res=>{
-      //     if(res.data.code==20000){
-      //         order.value = res.data.resultdata;
-      //     }
-      // }).catch(e=>{
-      //     console.error(e);
-      // });
+      // 根据orderId从服务器获取订单信息
+      let url = `/orders/businessInfo/${orderId}`;
+      get(url).then(res=>{
+          console.log('API响应:', res.data);
+          if(res.data.code==20000){
+              const data = res.data.resultdata;
+              console.log('订单原始数据:', data);
+              // 直接使用返回的数据结构              
+              const orderData = data[0];
+              // 确保 ordersdetailet 是一个数组
+              if (orderData.ordersdetailet && !Array.isArray(orderData.ordersdetailet)) {
+                  orderData.ordersdetailet = [orderData.ordersdetailet];
+              }
+
+              // 如果ordersdetailet存在，则将商品信息合并进去
+              if (orderData.ordersdetailet && orderData.goods) {
+                  orderData.ordersdetailet.forEach(item => {
+                      // 因为API返回的ordersdetailet中没有goodsId来匹配，
+                      // 并且只有一个顶层goods对象，我们直接将其赋给订单详情项
+                      item.goods = orderData.goods;
+                  });
+              }
+              order.value = orderData;
+              console.log('处理后的订单数据:', order.value);
+          } else {
+              console.error('API返回错误:', res.data);
+          }
+      }).catch(e=>{
+          console.error('获取订单信息失败:', e);
+      });
   });
 
   const selectPaymentType = (type) => {
@@ -173,13 +220,126 @@ const toback=()=>{
   border-bottom: solid 1px #eee;
 }
 
-.wrapper .order-info .order-info-row h4{
-    font-size: 4.2vw;
-    color: #555;
+.wrapper .business-info {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
 }
-.wrapper .order-info .order-info-row p{
-    font-size: 4.2vw;
-    color: orangered;
+
+.wrapper .business-img {
+  width: 15vw;
+  height: 15vw;
+  border-radius: 2vw;
+  object-fit: cover;
+  margin-right: 3vw;
+  border: 1px solid #eee;
+}
+
+.wrapper .business-details {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wrapper .business-details h4 {
+  font-size: 4.5vw;
+  color: #333;
+  margin: 0;
+  font-weight: 600;
+}
+
+.wrapper .business-details p {
+  font-size: 5vw;
+  color: #FF6B35;
+  margin: 0;
+  font-weight: 700;
+}
+
+/*************** 商品详情部分 ***************/
+.wrapper .goods-details-section {
+  margin-top: 3vw;
+  padding-top: 3vw;
+  border-top: 1px solid #eee;
+}
+
+.wrapper .goods-title {
+  font-size: 3.8vw;
+  color: #666;
+  margin: 0 0 2vw 0;
+}
+
+.wrapper .goods-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wrapper .goods-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2vw 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.wrapper .goods-item:last-child {
+  border-bottom: none;
+}
+
+.wrapper .goods-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.wrapper .goods-img {
+  width: 12vw;
+  height: 12vw;
+  border-radius: 1.5vw;
+  object-fit: cover;
+  margin-right: 3vw;
+  border: 1px solid #eee;
+}
+
+.wrapper .goods-info {
+  flex: 1;
+}
+
+.wrapper .goods-name {
+  font-size: 3.5vw;
+  color: #333;
+  margin: 0 0 1vw 0;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.wrapper .goods-price {
+  font-size: 3.2vw;
+  color: #FF6B35;
+  margin: 0;
+  font-weight: 600;
+}
+
+.wrapper .goods-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.wrapper .goods-quantity {
+  font-size: 3.2vw;
+  color: #666;
+  margin: 0 0 1vw 0;
+}
+
+.wrapper .goods-total {
+  font-size: 3.8vw;
+  color: #333;
+  margin: 0;
+  font-weight: 600;
 }
 
 /*************** 支付方式部分 ***************/

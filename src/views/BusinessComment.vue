@@ -44,6 +44,17 @@
           </div>
         </div>
         
+        <!-- 商品信息 -->
+        <div class="goods-info" v-if="comment.goods">
+          <div class="goods-image" v-if="comment.goods.goodsImg">
+            <img :src="comment.goods.goodsImg" alt="商品图片" />
+          </div>
+          <div class="goods-details">
+            <h4 class="goods-name">{{ comment.goods.goodsName }}</h4>
+            <p class="goods-price">￥{{ comment.goods.goodsPrice }}</p>
+          </div>
+        </div>
+        
         <!-- 评分区域 -->
         <div class="rating">
           <span v-for="n in 5" :key="n" class="star" :class="{ active: n <= comment.rating }">★</span>
@@ -127,7 +138,8 @@ const loadCommentsByFilter = async (filterKey) => {
           date: comment.created ? new Date(comment.created).toLocaleDateString() : '',
           rating: comment.rate || 5,
           content: comment.coText || '',
-          images: comment.coImg ? [comment.coImg] : []
+          images: comment.coImg ? [comment.coImg] : [],
+          goods: comment.goods || null
         }));
         console.log('加载的评论数据:', commentList.value);
       } else {
@@ -180,7 +192,8 @@ const loadComments = async () => {
           date: comment.created ? new Date(comment.created).toLocaleDateString() : '',
           rating: comment.rate || 5,
           content: comment.coText || '',
-          images: comment.coImg ? [comment.coImg] : []
+          images: comment.coImg ? [comment.coImg] : [],
+          goods: comment.goods || null
         }));
         console.log('加载的评论数据:', commentList.value);
       } else {
@@ -389,6 +402,48 @@ onMounted(() => {
   font-size: 14px;
   line-height: 1.5;
   color: #333;
+  margin: 0;
+}
+
+/* 商品信息 */
+.goods-info {
+  display: flex;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-left: 3px solid #007bff;
+}
+
+.goods-image {
+  width: 60px;
+  height: 60px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.goods-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.goods-details {
+  flex: 1;
+}
+
+.goods-name {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0 0 5px 0;
+  color: #333;
+}
+
+.goods-price {
+  font-size: 14px;
+  color: #ff6b6b;
+  font-weight: bold;
   margin: 0;
 }
 

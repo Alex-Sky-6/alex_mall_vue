@@ -20,6 +20,19 @@
           </div>
         </div>
         
+        <!-- 商店和商品信息 -->
+        <div class="business-info">
+          <div class="business-name">
+            <span class="label">商店：</span>
+            <span class="value">{{ comment.businessName }}</span>
+          </div>
+          <div class="goods-info" v-if="comment.goods">
+            <span class="label">商品：</span>
+            <span class="value">{{ comment.goods.goodsName }}</span>
+            <span class="price">￥{{ comment.goods.goodsPrice }}</span>
+          </div>
+        </div>
+        
         <!-- 评分区域 -->
         <div class="rating">
           <span v-for="n in 5" :key="n" class="star" :class="{ active: n <= comment.rating }">★</span>
@@ -122,7 +135,9 @@ const loadComments = async () => {
             date: comment.created,
             rating: comment.rate || 0,
             content: comment.coText || '',
-            images: comment.coImg ? [comment.coImg] : []
+            images: comment.coImg ? [comment.coImg] : [],
+            businessName: comment.businessName || '未知商店',
+            goods: comment.goods || null
           };
         });
         console.log('评论数据加载成功:', commentList.value);
@@ -205,6 +220,44 @@ onMounted(() => {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
+}
+
+/* 商店和商品信息 */
+.business-info {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-left: 3px solid #007bff;
+}
+
+.business-name, .goods-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.goods-info:last-child {
+  margin-bottom: 0;
+}
+
+.business-info .label {
+  font-size: 12px;
+  color: #666;
+  font-weight: bold;
+  min-width: 40px;
+}
+
+.business-info .value {
+  font-size: 13px;
+  color: #333;
+  margin-right: 10px;
+}
+
+.business-info .price {
+  font-size: 13px;
+  color: #ff6b6b;
+  font-weight: bold;
 }
 
 .avatar {
